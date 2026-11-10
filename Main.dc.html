@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Savings Challenge</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&amp;family=Caveat:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F6F1E7}
+a{color:#0E3B2E}a:hover{color:#09271F}
+.paper{background-color:#F6F1E7;background-image:radial-gradient(rgba(14,59,46,.13) 1.2px,transparent 1.2px);background-size:22px 22px}
+.display{font-family:'Bricolage Grotesque',Inter,sans-serif}
+.board-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px}
+.cell{appearance:none;position:relative;font-family:'Bricolage Grotesque',Inter,sans-serif;font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;line-height:1;color:#3A4A42;background:#FBF8F1;border:1px solid #ECE5D6;border-radius:12px;min-height:50px;padding:0;cursor:pointer;transition:transform .14s ease,background .2s,border-color .2s,color .2s,box-shadow .2s}
+.cell:hover{transform:translateY(-2px);background:#FFFFFF;border-color:#D8CFBD;color:#0E3B2E;box-shadow:0 6px 14px rgba(14,59,46,.08)}
+.cell:active{transform:scale(.95)}
+.cell:focus-visible{outline:3px solid #0E3B2E;outline-offset:2px;z-index:2}
+.cell .num{position:relative;z-index:1}
+.cell .ring{position:absolute;left:8%;top:10%;width:84%;height:80%;overflow:visible;pointer-events:none}
+.cell .ring path{fill:none;stroke:#1C7A57;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;vector-effect:non-scaling-stroke;opacity:0}
+.cell.done{background:#DCF0E3;border-color:#B5DCC4;color:#0E3B2E;font-weight:700}
+.cell.done .ring path{opacity:1;stroke-dashoffset:0;animation:draw .55s cubic-bezier(.65,0,.35,1) both}
+.cell.done .num{animation:pop .45s ease-out both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}}
+.cell.pick{background:#FFE9A8;border-color:#E3B23C;color:#5C3D00;box-shadow:0 0 0 3px rgba(227,178,60,.35);animation:bob 1.2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@media (prefers-reduced-motion:reduce){.cell.done .ring path,.cell.done .num,.cell.pick{animation:none}}
+.preset{appearance:none;text-align:left;display:flex;flex-direction:column;gap:2px;padding:12px 14px;min-height:64px;border-radius:14px;border:1.5px solid #E6DECF;background:#FFFDF8;color:#17201C;cursor:pointer;transition:border-color .15s,background .15s}
+.preset:hover{border-color:#B9AE99}
+.preset .pv{font:700 17px 'Bricolage Grotesque',Inter,sans-serif}
+.preset .ps{font:500 12.5px Inter,sans-serif;color:#62695F}
+.preset.on{background:#0E3B2E;border-color:#0E3B2E;color:#FFFFFF}
+.preset.on .ps{color:#BFE3CF}
+.btn{appearance:none;font:600 15px Inter,sans-serif;min-height:46px;padding:0 18px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .1s}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:#0E3B2E;color:#FFFFFF;border:0}
+.btn-primary:hover{background:#09271F}
+.btn-primary:disabled{background:#9AA59E;cursor:not-allowed}
+.btn-sun{background:#F6C445;color:#2B2100;border:0}
+.btn-sun:hover{background:#EDB52A}
+.btn-sun:disabled{background:#E9E1CC;color:#7A7462;cursor:not-allowed}
+.btn-light{background:rgba(255,255,255,.12);color:#FFFFFF;border:1.5px solid rgba(255,255,255,.28)}
+.btn-light:hover{background:rgba(255,255,255,.2)}
+.btn-quiet{background:transparent;color:#8A2E1F;border:1.5px dashed #D9A99F}
+.ms{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;font:600 12.5px Inter,sans-serif;color:#62695F}
+.ms .badge{width:54px;height:54px;border-radius:16px;transform:rotate(-6deg);border:2px dashed #CFC5B2;display:flex;align-items:center;justify-content:center;font:800 14px 'Bricolage Grotesque',Inter,sans-serif;color:#8C8473;background:#FFFDF8}
+.ms.hit{color:#0E3B2E}
+.ms.hit .badge{border:0;background:#F6C445;color:#2B2100;box-shadow:0 6px 14px rgba(246,196,69,.45)}
+.tape{position:absolute;width:96px;height:26px;background:rgba(246,196,69,.55);top:-12px}
+.layout{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.side{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:16px}
+@media (max-width:640px){.board-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}.cell{font-size:15px;min-height:46px}.hero-amt{font-size:44px !important}}
+</style>
+</helmet>
+<div class="paper" style="min-height: 100vh; box-sizing: border-box; padding: 28px 16px 72px; font-family: Inter, system-ui, sans-serif; color: #17201C">
+<div style="max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px">
+
+<header style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="width: 44px; height: 44px; border-radius: 14px; background: #0E3B2E; display: flex; align-items: center; justify-content: center; transform: rotate(-6deg)" aria-hidden="true">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F6C445" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><path d="m14.5 17.5 2 2 4-4.5"></path></svg>
+</div>
+<div style="display: flex; flex-direction: column">
+<span class="display" style="font-size: 22px; font-weight: 800; letter-spacing: -0.02em">Square by Square</span>
+<span style="font-size: 13px; color: #62695F">Your savings board, no marker needed</span>
+</div>
+</div>
+<button class="btn btn-primary" type="button" onClick="{{openEdit}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+Edit goal
+</button>
+</header>
+
+<section style="position: relative; overflow: hidden; background: #0E3B2E; color: #FFFFFF; border-radius: 28px; padding: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 28px">
+<div aria-hidden="true" style="position: absolute; right: -60px; top: -80px; width: 280px; height: 280px; border-radius: 50%; border: 36px solid rgba(246,196,69,.10)"></div>
+<div style="position: relative; width: 148px; height: 148px; flex-shrink: 0">
+<svg width="148" height="148" viewBox="0 0 148 148" role="img" aria-label="{{ringLabel}}">
+<circle cx="74" cy="74" r="62" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="14"></circle>
+<circle cx="74" cy="74" r="62" fill="none" stroke="#F6C445" stroke-width="14" stroke-linecap="round" stroke-dasharray="{{ringDash}}" transform="rotate(-90 74 74)"></circle>
+</svg>
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center">
+<span class="display" style="font-size: 32px; font-weight: 800; letter-spacing: -0.03em">{{pctShort}}</span>
+<span style="font-size: 12px; color: #BFE3CF">complete</span>
+</div>
+</div>
+<div style="flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 6px; position: relative">
+<span style="font-size: 14px; font-weight: 600; color: #BFE3CF">{{nameLabel}}</span>
+<span class="display hero-amt" style="font-size: 60px; font-weight: 800; letter-spacing: -0.035em; line-height: 1">{{savedLabel}}</span>
+<span style="font-size: 16px; color: #DDEDE3">saved of <strong style="color: #FFFFFF">{{totalLabel}}</strong></span>
+</div>
+<div style="flex: 1 1 340px; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; position: relative">
+<div style="background: rgba(255,255,255,.08); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 12.5px; color: #BFE3CF">Left to save</span>
+<span class="display" style="font-size: 20px; font-weight: 700">{{remainingLabel}}</span>
+</div>
+<div style="background: rgba(255,255,255,.08); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 12.5px; color: #BFE3CF">Squares done</span>
+<span class="display" style="font-size: 20px; font-weight: 700">{{doneCount}}<span style="font-size: 14px; color: #BFE3CF"> / {{n}}</span></span>
+</div>
+<div style="background: rgba(255,255,255,.08); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 12.5px; color: #BFE3CF">12-month pace</span>
+<span class="display" style="font-size: 20px; font-weight: 700">{{paceLabel}}<span style="font-size: 13px; color: #BFE3CF">/wk</span></span>
+</div>
+</div>
+</section>
+
+<div class="layout">
+<main style="flex: 999 1 620px; min-width: 0; position: relative; isolation: isolate; background: #FFFFFF; border-radius: 24px; padding: 30px 22px 24px; box-shadow: 0 1px 0 #E6DECF, 0 18px 40px rgba(23,32,28,.08)">
+<span class="tape" aria-hidden="true" style="left: 36px; transform: rotate(-4deg)"></span>
+<span class="tape" aria-hidden="true" style="right: 36px; transform: rotate(5deg)"></span>
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px">
+<div style="display: flex; flex-direction: column">
+<span style="font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #62695F; margin-bottom: 6px">The board</span>
+<span class="display" style="font-size: 44px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; color: #0E3B2E">{{goalLabel}}</span>
+<span style="position: relative; align-self: flex-start; font-family: Caveat, cursive; font-weight: 700; font-size: 32px; line-height: 1.15; color: #7A5A0C; padding: 0 4px">{{nameLabel}}<svg width="100%" height="12" viewBox="0 0 200 12" preserveAspectRatio="none" fill="none" aria-hidden="true" style="position: absolute; left: 0; bottom: -2px; z-index: -1"><path d="M3 8c40-5 100-7 194-3" stroke="#F6C445" stroke-width="8" stroke-linecap="round"></path></svg></span>
+</div>
+<div style="display: flex; gap: 14px; font-size: 13px; color: #62695F; flex-wrap: wrap">
+<span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 16px; border-radius: 5px; background: #FBF8F1; border: 1px solid #D8CFBD"></span>To save</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 16px; border-radius: 5px; background: #DCF0E3; border: 1.5px solid #1C7A57"></span>Saved</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 16px; height: 16px; border-radius: 5px; background: #FFE9A8; border: 1.5px solid #E3B23C"></span>Picked</span>
+</div>
+</div>
+<div class="board-grid">
+<sc-for list="{{cells}}" as="c" hint-placeholder-count="48">
+<button type="button" class="{{c.cls}}" aria-pressed="{{c.pressed}}" aria-label="{{c.label}}" onClick="{{c.toggle}}"><svg class="ring" viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M74 9C58 2 26 3 12 15C-1 27 6 50 36 55C66 60 95 49 92 28C90 14 72 6 50 8"></path></svg><span class="num">{{c.num}}</span></button>
+</sc-for>
+</div>
+<p style="margin: 18px 0 0; font-size: 13.5px; color: #62695F">Each square is a deposit of that amount. Tap one after you save it. {{boardHint}}</p>
+</main>
+
+<aside class="side">
+<section style="background: #FFFFFF; border-radius: 24px; padding: 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 1px 0 #E6DECF, 0 10px 28px rgba(23,32,28,.06)">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 class="display" style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.01em">Today's deposit</h2>
+<span style="font-size: 14px; color: #62695F; line-height: 1.45">Can't choose? Let the board pick a square for you.</span>
+</div>
+<sc-if value="{{hasPick}}" hint-placeholder-val="{{ false }}">
+<div style="background: #FFF4D1; border: 1.5px dashed #E3B23C; border-radius: 18px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column">
+<span style="font-size: 12.5px; color: #6B4700; font-weight: 600">Put away</span>
+<span style="font-family: Caveat, cursive; font-weight: 700; font-size: 40px; line-height: 1; color: #6B4700">{{pickLabel}}</span>
+</div>
+<button class="btn btn-primary" type="button" onClick="{{confirmPick}}">Done</button>
+</div>
+</sc-if>
+<button class="btn btn-sun" type="button" onClick="{{randomPick}}" disabled="{{allDone}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"></circle><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"></circle><circle cx="12" cy="12" r="1.2" fill="currentColor"></circle></svg>
+{{pickBtn}}
+</button>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 24px; padding: 22px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 1px 0 #E6DECF, 0 10px 28px rgba(23,32,28,.06)">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<h2 class="display" style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.01em">Milestones</h2>
+<span style="font-size: 13px; color: #62695F">{{msCount}} of 4</span>
+</div>
+<div style="display: flex; gap: 6px">
+<sc-for list="{{milestones}}" as="m" hint-placeholder-count="4">
+<div class="{{m.cls}}"><span class="badge">{{m.icon}}</span><span>{{m.label}}</span></div>
+</sc-for>
+</div>
+</section>
+
+<button class="btn btn-quiet" type="button" onClick="{{reset}}">{{resetLabel}}</button>
+</aside>
+</div>
+</div>
+
+<sc-if value="{{modalOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position: fixed; inset: 0; background: rgba(9,39,31,.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50">
+<div role="dialog" aria-modal="true" aria-labelledby="goal-title" style="width: 100%; max-width: 520px; max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; background: #FFFDF8; border-radius: 28px; display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,.3)">
+<div style="position: relative; background: #0E3B2E; color: #FFFFFF; padding: 26px 26px 22px; border-radius: 28px 28px 0 0; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+<div aria-hidden="true" style="position: absolute; right: 20px; top: 22px; display: grid; grid-template-columns: repeat(5, 18px); gap: 5px; transform: rotate(8deg); opacity: .9">
+<span style="height: 18px; border-radius: 5px; background: #F6C445"></span><span style="height: 18px; border-radius: 5px; background: #F6C445"></span><span style="height: 18px; border-radius: 5px; background: #F6C445"></span><span style="height: 18px; border-radius: 5px; background: rgba(255,255,255,.18)"></span><span style="height: 18px; border-radius: 5px; background: rgba(255,255,255,.18)"></span>
+<span style="height: 18px; border-radius: 5px; background: #F6C445"></span><span style="height: 18px; border-radius: 5px; background: rgba(255,255,255,.18)"></span><span style="height: 18px; border-radius: 5px; background: rgba(255,255,255,.18)"></span><span style="height: 18px; border-radius: 5px; background: rgba(255,255,255,.18)"></span><span style="height: 18px; border-radius: 5px; background: rgba(255,255,255,.18)"></span>
+</div>
+<sc-if value="{{canClose}}" hint-placeholder-val="{{ false }}">
+<button type="button" aria-label="Close" onClick="{{closeModal}}" style="position: absolute; right: 14px; top: 14px; appearance: none; border: 0; background: rgba(255,255,255,.14); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #FFFFFF; z-index: 1">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+</button>
+</sc-if>
+<span style="font-size: 13px; font-weight: 600; color: #BFE3CF; letter-spacing: .06em; text-transform: uppercase">{{modalKicker}}</span>
+<h2 id="goal-title" class="display" style="margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.05; max-width: 320px">{{modalTitle}}</h2>
+<p style="margin: 0; font-size: 14.5px; color: #DDEDE3; line-height: 1.5; max-width: 380px">Each square is one deposit, starting at 1 and going up by 1. We draw the board, so you don't have to.</p>
+</div>
+
+<div style="padding: 24px 26px 26px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{presets}}" as="p" hint-placeholder-count="6">
+<button type="button" class="{{p.cls}}" onClick="{{p.pick}}"><span class="pv">{{p.label}}</span><span class="ps">{{p.sub}}</span></button>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="goal-amount" style="font-size: 14px; font-weight: 600">Or type your own amount</label>
+<div style="display: flex; align-items: center; gap: 10px; border: 1.5px solid #D9CFBC; background: #FFFFFF; border-radius: 16px; padding: 0 16px; min-height: 58px">
+<span class="display" style="font-size: 20px; font-weight: 700; color: #62695F">{{symbol}}</span>
+<input id="goal-amount" type="text" inputmode="numeric" autocomplete="off" value="{{draftDisplay}}" onChange="{{onDraft}}" style="flex: 1; min-width: 0; border: 0; outline: none; font: 700 24px 'Bricolage Grotesque', Inter, sans-serif; color: #17201C; background: transparent">
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="goal-name" style="font-size: 14px; font-weight: 600">What's it for? <span style="font-weight: 400; color: #62695F">(optional)</span></label>
+<input id="goal-name" type="text" maxlength="40" placeholder="e.g. em 2027, trip to Lisbon" value="{{draftName}}" onChange="{{onDraftName}}" style="border: 1.5px solid #D9CFBC; background: #FFFFFF; border-radius: 16px; padding: 0 16px; min-height: 52px; font: 500 16px Inter, sans-serif; color: #17201C">
+</div>
+
+<sc-if value="{{draftValid}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; align-items: center; gap: 14px; background: #DCF0E3; border-radius: 18px; padding: 14px 16px">
+<span class="display" style="width: 52px; height: 52px; flex-shrink: 0; border-radius: 14px; background: #0E3B2E; color: #F6C445; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 800">{{draftN}}</span>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 15px; font-weight: 600; color: #0E3B2E">{{draftN}} squares, from {{draftFirst}} to {{draftLast}}</span>
+<span style="font-size: 13.5px; color: #2F5B4A">Fill them all and you'll have {{draftTotal}}.</span>
+</div>
+</div>
+<sc-if value="{{draftDrops}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 14px; color: #A3301C">{{draftDropsLabel}}</span>
+</sc-if>
+</sc-if>
+<sc-if value="{{draftInvalid}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 14px; color: #A3301C">{{draftError}}</span>
+</sc-if>
+
+<button class="btn btn-primary" type="button" onClick="{{saveGoal}}" disabled="{{draftInvalid}}" style="min-height: 56px; font-size: 16px">{{saveLabel}}</button>
+</div>
+</div>
+</div>
+</sc-if>
+</div></x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"currency":{"editor":"enum","options":["BRL","USD","EUR"],"default":"BRL"},"$preview":{"width":1280,"height":1640}}'>
+var STORE_KEY = 'savings-challenge:v1';
+var MIN_GOAL = 10;
+var MAX_GOAL = 300000;
+var RING = 2 * Math.PI * 62;
+function squaresFor(goal) { return Math.max(1, Math.ceil((Math.sqrt(1 + 8 * goal) - 1) / 2)); }
+function tri(n) { return n * (n + 1) / 2; }
+function localeFor(cur) { return cur === 'USD' ? 'en-US' : (cur === 'EUR' ? 'de-DE' : 'pt-BR'); }
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { goal: 30000, name: 'em 2027', checked: [], hasGoal: false, modal: false, draft: '30000', draftName: 'em 2027', pick: null, resetArmed: false };
+  }
+
+  componentDidMount() {
+    var saved = null;
+    try { saved = JSON.parse(window.localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { saved = null; }
+    if (saved && typeof saved.goal === 'number' && saved.goal >= MIN_GOAL) {
+      var n = squaresFor(saved.goal);
+      var checked = Array.isArray(saved.checked) ? saved.checked.filter(function (x) { return typeof x === 'number' && x >= 1 && x <= n; }) : [];
+      this.setState({ goal: saved.goal, name: saved.name || '', checked: checked, hasGoal: true, modal: false });
+    } else {
+      this.setState({ hasGoal: false, modal: true, draft: '30000', draftName: '' });
+    }
+  }
+
+  persist() {
+    try {
+      window.localStorage.setItem(STORE_KEY, JSON.stringify({ goal: this.state.goal, name: this.state.name, checked: this.state.checked, updatedAt: new Date().toISOString() }));
+    } catch (e) {}
+  }
+
+  fmt(v) {
+    var cur = this.props.currency || 'BRL';
+    try { return new Intl.NumberFormat(localeFor(cur), { style: 'currency', currency: cur, maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(v); }
+    catch (e) { return String(v); }
+  }
+
+  symbol() {
+    var cur = this.props.currency || 'BRL';
+    return cur === 'USD' ? '$' : (cur === 'EUR' ? '€' : 'R$');
+  }
+
+  num(v) { return new Intl.NumberFormat(localeFor(this.props.currency || 'BRL')).format(v); }
+
+  toggle(i) {
+    var set = this.state.checked.slice();
+    var at = set.indexOf(i);
+    if (at >= 0) set.splice(at, 1); else set.push(i);
+    var pick = this.state.pick === i ? null : this.state.pick;
+    this.setState({ checked: set, pick: pick, resetArmed: false }, () => this.persist());
+  }
+
+  renderVals() {
+    var s = this.state;
+    var n = squaresFor(s.goal);
+    var total = tri(n);
+    var doneSet = {};
+    var saved = 0;
+    s.checked.forEach(function (x) { doneSet[x] = true; saved += x; });
+    var ratio = total ? Math.min(1, saved / total) : 0;
+    var pct = Math.round(ratio * 1000) / 10;
+    var self = this;
+
+    var cells = [];
+    for (var i = 1; i <= n; i++) {
+      (function (k) {
+        var done = !!doneSet[k];
+        cells.push({
+          num: k,
+          cls: 'cell' + (done ? ' done' : '') + (s.pick === k ? ' pick' : ''),
+          pressed: done ? 'true' : 'false',
+          label: 'Deposit ' + self.fmt(k) + (done ? ', saved' : ', not saved yet'),
+          toggle: function () { self.toggle(k); }
+        });
+      })(i);
+    }
+
+    var msHit = 0;
+    var milestones = [25, 50, 75, 100].map(function (m) {
+      var hit = pct >= m;
+      if (hit) msHit++;
+      return { cls: 'ms' + (hit ? ' hit' : ''), icon: hit ? '★' : m + '%', label: m === 100 ? 'Goal!' : m + '%' };
+    });
+
+    var draftNum = parseInt(String(s.draft).replace(/\D/g, ''), 10) || 0;
+    var draftValid = draftNum >= MIN_GOAL && draftNum <= MAX_GOAL;
+    var dn = draftValid ? squaresFor(draftNum) : 0;
+    var drops = s.hasGoal && draftValid ? s.checked.filter(function (x) { return x > dn; }).length : 0;
+    var presets = [1000, 5000, 10000, 20000, 30000, 50000].map(function (v) {
+      return { label: self.fmt(v), sub: squaresFor(v) + ' squares', cls: 'preset' + (draftNum === v ? ' on' : ''), pick: function () { self.setState({ draft: String(v) }); } };
+    });
+
+    var left = n - s.checked.length;
+    var remaining = Math.max(0, total - saved);
+    var dash = (RING * ratio).toFixed(1) + ' ' + RING.toFixed(1);
+
+    return {
+      cells: cells,
+      n: n,
+      goalLabel: this.fmt(s.goal),
+      nameLabel: s.name || 'My savings goal',
+      boardHint: 'All ' + n + ' squares add up to ' + this.fmt(total) + '.',
+      savedLabel: this.fmt(saved),
+      totalLabel: this.fmt(total),
+      ringDash: dash,
+      ringLabel: pct + '% of the goal saved',
+      pctShort: Math.round(pct) + '%',
+      doneCount: s.checked.length,
+      remainingLabel: this.fmt(remaining),
+      paceLabel: this.fmt(Math.ceil(total / 52)),
+      allDone: left === 0,
+      hasPick: s.pick !== null,
+      pickLabel: s.pick !== null ? this.fmt(s.pick) : '',
+      pickBtn: left === 0 ? 'Board complete!' : (s.pick !== null ? 'Roll again' : 'Pick a square for me'),
+      randomPick: function () {
+        var open = [];
+        for (var j = 1; j <= n; j++) if (!doneSet[j] && j !== s.pick) open.push(j);
+        if (!open.length) open = s.pick !== null ? [s.pick] : [];
+        if (open.length) self.setState({ pick: open[Math.floor(Math.random() * open.length)] });
+      },
+      confirmPick: function () { if (s.pick !== null) self.toggle(s.pick); },
+      milestones: milestones,
+      msCount: msHit,
+      resetLabel: s.resetArmed ? 'Tap again to clear every square' : 'Clear board',
+      reset: function () {
+        if (!s.resetArmed) { self.setState({ resetArmed: true }); return; }
+        self.setState({ checked: [], pick: null, resetArmed: false }, function () { self.persist(); });
+      },
+      openEdit: function () { self.setState({ modal: true, draft: String(s.goal), draftName: s.name, resetArmed: false }); },
+      closeModal: function () { self.setState({ modal: false }); },
+      modalOpen: s.modal,
+      canClose: s.hasGoal,
+      modalKicker: s.hasGoal ? 'Edit goal' : 'Step 1 of 1',
+      modalTitle: s.hasGoal ? 'Change your goal' : 'How much do you want to save?',
+      saveLabel: s.hasGoal ? 'Save goal' : 'Draw my board',
+      symbol: this.symbol(),
+      presets: presets,
+      draftDisplay: draftNum ? this.num(draftNum) : '',
+      draftName: s.draftName,
+      onDraft: function (e) { self.setState({ draft: e.target.value.replace(/\D/g, '').slice(0, 7) }); },
+      onDraftName: function (e) { self.setState({ draftName: e.target.value }); },
+      draftValid: draftValid,
+      draftInvalid: !draftValid,
+      draftError: draftNum < MIN_GOAL ? 'Enter at least ' + this.fmt(MIN_GOAL) + '.' : 'Keep it under ' + this.fmt(MAX_GOAL) + ' so the board stays usable.',
+      draftN: dn,
+      draftFirst: this.fmt(1),
+      draftLast: this.fmt(dn),
+      draftTotal: draftValid ? this.fmt(tri(dn)) : '',
+      draftDrops: drops > 0,
+      draftDropsLabel: drops + (drops === 1 ? ' saved square is' : ' saved squares are') + ' past the new board and will be removed.',
+      saveGoal: function () {
+        if (!draftValid) return;
+        var nn = squaresFor(draftNum);
+        var kept = s.checked.filter(function (x) { return x <= nn; });
+        self.setState({ goal: draftNum, name: (s.draftName || '').trim(), checked: kept, hasGoal: true, modal: false, pick: null }, function () { self.persist(); });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
